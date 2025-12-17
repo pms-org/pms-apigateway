@@ -14,11 +14,14 @@ public class CustomHeaderFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
-        return chain.filter(exchange)
-                .then(Mono.fromRunnable(() -> {
-                    exchange.getResponse().getHeaders()
-                            .add("X-Gateway", "DTCC-Simulation-Gateway");
-                }));
+        exchange.getResponse().beforeCommit(() -> {
+            exchange.getResponse()
+                    .getHeaders()
+                    .add("X-Gateway", "DTCC-Simulation-Gateway");
+            return Mono.empty();
+        });
+
+        return chain.filter(exchange);
     }
 
     @Override

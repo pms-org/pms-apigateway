@@ -1,6 +1,3 @@
-server:
-  port: 8080
-
 spring:
   application:
     name: api-gateway
@@ -11,7 +8,38 @@ spring:
         - id: portfolio-id-service
           uri: http://localhost:8095
           predicates:
-            - Path=/portfolio-id/**
+            - Path=/simulation
+          filters:
+            - name: RewritePath
+              args:
+                regexp: /simulation
+                replacement: /api/portfolio/create
+
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 5
+                redis-rate-limiter.burstCapacity: 10
+                key-resolver: "#{@ipKeyResolver}"
+
+            - name: CircuitBreaker
+              args:
+                name: portfolioCmd
+                fallbackUri: forward:/fallback
+
+            - name: Retry
+              args:
+                retries: 2
+                methods: POST,GET
+                exceptions:
+                  - java.net.ConnectException
+                  - java.util.concurrent.TimeoutException
+
       httpclient:
-        connect-timeout: 3000     # 3 seconds
-        response-timeout: 10s     # 10 seconds
+        connect-timeout: 3000
+        response-timeout: 10s
+
+logging:
+  level:
+    io.github.resilience4j.circuitbreaker: DEBUG
+    org.springframework.cloud.gateway.filter.factory.CircuitBreakerGatewayFilterFactory: DEBUG
+    reactor.netty.http.client: DEBUG
