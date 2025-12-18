@@ -4,16 +4,20 @@ spring:
 
   cloud:
     gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+
       routes:
         - id: portfolio-id-service
           uri: http://localhost:8095
           predicates:
-            - Path=/simulation
+            - Path=/simulation/**
+
           filters:
             - name: RewritePath
               args:
-                regexp: /simulation
-                replacement: /api/portfolio/create
+                regexp: /simulation(?<segment>/?.*)
+                replacement: /api/portfolio/create${segment}
 
             - name: RequestRateLimiter
               args:
@@ -21,25 +25,53 @@ spring:
                 redis-rate-limiter.burstCapacity: 10
                 key-resolver: "#{@ipKeyResolver}"
 
+
+            - name: Retry
+              args:
+                retries: 3
+                methods: GET,POST
+                exceptions:
+                  - java.net.ConnectException
+                  - java.util.concurrent.TimeoutException
+
             - name: CircuitBreaker
               args:
                 name: portfolioCmd
                 fallbackUri: forward:/fallback
 
-            - name: Retry
-              args:
-                retries: 2
-                methods: POST,GET
-                exceptions:
-                  - java.net.ConnectException
-                  - java.util.concurrent.TimeoutException
-
       httpclient:
         connect-timeout: 3000
         response-timeout: 10s
 
+
+
+resilience4j:
+  timelimiter:
+    instances:
+      portfolioCmd:
+        timeout-duration: 5s
+        cancel-running-future: true
+
+  circuitbreaker:
+    instances:
+      portfolioCmd:
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+
+        recordExceptions:
+          - java.net.ConnectException
+          - java.util.concurrent.TimeoutException
+
+
 logging:
   level:
-    io.github.resilience4j.circuitbreaker: DEBUG
-    org.springframework.cloud.gateway.filter.factory.CircuitBreakerGatewayFilterFactory: DEBUG
-    reactor.netty.http.client: DEBUG
+    io.github.resilience4j.circuitbreaker: INFO
+    io.github.resilience4j.timelimiter: INFO
+    org.springframework.cloud.gateway.filter.factory.CircuitBreakerGatewayFilterFactory: INFO
+    reactor.netty.http.client: INFO
