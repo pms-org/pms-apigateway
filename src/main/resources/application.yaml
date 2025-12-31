@@ -1,23 +1,45 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: api-gateway
 
+
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: ${SPRING_REDIS_PORT:6379}
+
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://auth:8081
+
   cloud:
     gateway:
+
+
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
 
       routes:
-        - id: portfolio-id-service
-          uri: http://localhost:8095
+
+
+        - id: portfolio-service
+          uri: http://portfolio-service:8095
           predicates:
             - Path=/simulation/**
-
           filters:
+
+
             - name: RewritePath
               args:
-                regexp: /simulation(?<segment>/?.*)
-                replacement: /api/portfolio/create${segment}
+                regexp: /simulation/(?<segment>.*)
+                replacement: /api/portfolio/${segment}
+
 
             - name: RequestRateLimiter
               args:
@@ -28,50 +50,79 @@ spring:
 
             - name: Retry
               args:
-                retries: 3
-                methods: GET,POST
+                retries: 1
+                methods: POST
                 exceptions:
                   - java.net.ConnectException
                   - java.util.concurrent.TimeoutException
+
 
             - name: CircuitBreaker
               args:
                 name: portfolioCmd
                 fallbackUri: forward:/fallback
 
+
+        - id: analytics-service
+          uri: http://analytics-service:8082
+          predicates:
+            - Path=/analytics/**
+          filters:
+
+            - name: RewritePath
+              args:
+                regexp: /analytics/(?<segment>.*)
+                replacement: /api/${segment}
+
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                key-resolver: "#{@ipKeyResolver}"
+
+            - name: Retry
+              args:
+                retries: 2
+                methods: GET
+                exceptions:
+                  - java.net.ConnectException
+                  - java.util.concurrent.TimeoutException
+
+            - name: CircuitBreaker
+              args:
+                name: analyticsCmd
+                fallbackUri: forward:/fallback
+
+
       httpclient:
         connect-timeout: 3000
         response-timeout: 10s
-
-
 
 resilience4j:
   timelimiter:
     instances:
       portfolioCmd:
         timeout-duration: 5s
-        cancel-running-future: true
+      analyticsCmd:
+        timeout-duration: 5s
 
   circuitbreaker:
     instances:
       portfolioCmd:
-        registerHealthIndicator: true
         slidingWindowType: COUNT_BASED
         slidingWindowSize: 10
         minimumNumberOfCalls: 5
         failureRateThreshold: 50
         waitDurationInOpenState: 10s
-        permittedNumberOfCallsInHalfOpenState: 3
-        automaticTransitionFromOpenToHalfOpenEnabled: true
-
-        recordExceptions:
-          - java.net.ConnectException
-          - java.util.concurrent.TimeoutException
-
+      analyticsCmd:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
 
 logging:
   level:
-    io.github.resilience4j.circuitbreaker: INFO
-    io.github.resilience4j.timelimiter: INFO
-    org.springframework.cloud.gateway.filter.factory.CircuitBreakerGatewayFilterFactory: INFO
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.security.oauth2: DEBUG
     reactor.netty.http.client: INFO
