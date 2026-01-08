@@ -13,16 +13,25 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
 
     @Override
     public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
+
+
+        if (exchange.getResponse().isCommitted()) {
+
+            return Mono.error(ex);
+        }
+
         exchange.getResponse().setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
-        exchange.getResponse().getHeaders().add("Content-Type", "application/json");
+        exchange.getResponse().getHeaders().set("Content-Type", "application/json");
 
         String errorJson = """
-            {"status":500, "message":"Gateway error occurred", "detail":"%s"}
-        """.formatted(ex.getMessage());
+            {"status":500,"message":"Gateway error occurred"}
+        """;
 
         DataBuffer buffer = exchange.getResponse()
-                .bufferFactory().wrap(errorJson.getBytes());
+                .bufferFactory()
+                .wrap(errorJson.getBytes());
 
         return exchange.getResponse().writeWith(Mono.just(buffer));
     }
 }
+

@@ -19,7 +19,7 @@ public class LoggingFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
-        ServerHttpRequest request = exchange.getRequest();
+        var request = exchange.getRequest();
         String correlationId =
                 request.getHeaders().getFirst(CorrelationIdFilter.CORRELATION_ID);
 
@@ -31,11 +31,11 @@ public class LoggingFilter implements GlobalFilter, Ordered {
         );
 
         return chain.filter(exchange)
-                .doOnSuccess(aVoid -> log.info(
-                        "Outgoing Response → status={}, path={}, correlationId={}",
-                        exchange.getResponse().getStatusCode(),
+                .doFinally(signalType -> log.info(
+                        "Completed Request → path={}, correlationId={}, signal={}",
                         request.getURI().getPath(),
-                        correlationId
+                        correlationId,
+                        signalType
                 ));
     }
 

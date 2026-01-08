@@ -22,7 +22,14 @@ spring:
     gateway:
 
 
+      filter:
+        request-rate-limiter:
+          enabled: true
+          include-headers: false
+
+
       default-filters:
+        - AddResponseHeader=X-Gateway,DTCC-Simulation-Gateway
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
 
       routes:
