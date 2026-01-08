@@ -24,8 +24,8 @@ services:
       SPRING_REDIS_HOST: pms-redis
       SPRING_REDIS_PORT: 6379
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://auth:8081
-      PORTFOLIO_SERVICE_URL: http://portfolio-service:8095
-      ANALYTICS_SERVICE_URL: http://analytics-service:8082
+      PORTFOLIO_SERVICE_URL: http://portfolio-id-service:8095
+      ANALYTICS_SERVICE_URL: http://pms-analytics-analytics-service:8082
       SPRING_PROFILES_ACTIVE: docker
     networks:
       - pms-network

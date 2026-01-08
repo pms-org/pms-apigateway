@@ -38,6 +38,9 @@ public class SecurityConfig {
                         .pathMatchers("/simulation/**")
                         .access(tokenType("SERVICE"))
 
+                                .pathMatchers("/portfolio/**").access(tokenType("SERVICE"))
+
+
                         // 🔒 USER tokens only
                         .pathMatchers("/analytics/**")
 //                        .getAuthorities().map(authorities ->

@@ -5,12 +5,10 @@ spring:
   application:
     name: api-gateway
 
-
   data:
     redis:
       host: ${SPRING_REDIS_HOST:localhost}
       port: ${SPRING_REDIS_PORT:6379}
-
 
   security:
     oauth2:
@@ -21,13 +19,6 @@ spring:
   cloud:
     gateway:
 
-
-      filter:
-        request-rate-limiter:
-          enabled: true
-          include-headers: false
-
-
       default-filters:
         - AddResponseHeader=X-Gateway,DTCC-Simulation-Gateway
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
@@ -35,25 +26,16 @@ spring:
       routes:
 
 
-        - id: portfolio-service
-          uri: http://portfolio-service:8095
+        - id: simulation-service
+          uri: http://pms-simulation:8090
           predicates:
             - Path=/simulation/**
           filters:
-
-
-            - name: RewritePath
-              args:
-                regexp: /simulation/(?<segment>.*)
-                replacement: /api/portfolio/${segment}
-
-
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter.replenishRate: 5
                 redis-rate-limiter.burstCapacity: 10
                 key-resolver: "#{@ipKeyResolver}"
-
 
             - name: Retry
               args:
@@ -63,11 +45,22 @@ spring:
                   - java.net.ConnectException
                   - java.util.concurrent.TimeoutException
 
-
             - name: CircuitBreaker
               args:
-                name: portfolioCmd
+                name: simulationCmd
                 fallbackUri: forward:/fallback
+
+        - id: portfolio-service
+          uri: http://portfolio-id-service:8095
+          predicates:
+            - Path=/portfolio/**
+
+          filters:
+            - name: RewritePath
+              args:
+                regexp: /portfolio/(?<segment>.*)
+                replacement: /${segment}
+
 
 
         - id: analytics-service
@@ -75,7 +68,6 @@ spring:
           predicates:
             - Path=/analytics/**
           filters:
-
             - name: RewritePath
               args:
                 regexp: /analytics/(?<segment>.*)
@@ -100,33 +92,36 @@ spring:
                 name: analyticsCmd
                 fallbackUri: forward:/fallback
 
-
       httpclient:
         connect-timeout: 3000
         response-timeout: 10s
 
+
 resilience4j:
+
   timelimiter:
     instances:
-      portfolioCmd:
+      simulationCmd:
         timeout-duration: 5s
       analyticsCmd:
         timeout-duration: 5s
 
   circuitbreaker:
     instances:
-      portfolioCmd:
+      simulationCmd:
         slidingWindowType: COUNT_BASED
         slidingWindowSize: 10
         minimumNumberOfCalls: 5
         failureRateThreshold: 50
         waitDurationInOpenState: 10s
+
       analyticsCmd:
         slidingWindowType: COUNT_BASED
         slidingWindowSize: 10
         minimumNumberOfCalls: 5
         failureRateThreshold: 50
         waitDurationInOpenState: 10s
+
 
 logging:
   level:
