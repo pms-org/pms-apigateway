@@ -16,11 +16,14 @@ pipeline {
         }
 
         stage('Build Artifact') {
-            steps {
-                // Compiles Java code and creates the JAR
-                sh 'mvn clean package -DskipTests'
-            }
+    steps {
+        // Use the name you gave in Step 1
+        script {
+            def mavenHome = tool 'maven-3.9' 
+            sh "${mavenHome}/bin/mvn clean package -DskipTests"
         }
+    }
+}
 
         stage('Build & Push Docker Image') {
             steps {
