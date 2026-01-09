@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         // Updated to your Docker Hub username and repository
-        DOCKERHUB_REPO = "guru110/pms_api_gateway"
+        DOCKERHUB_REPO = "gurum110/pms_api_gateway"
         IMAGE_TAG = "${BUILD_NUMBER}" 
     }
 
@@ -50,6 +50,8 @@ pipeline {
             }
         }
     }
+
+
 
     post {
         success {
