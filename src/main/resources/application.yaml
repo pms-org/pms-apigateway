@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 spring:
   application:
@@ -14,7 +14,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://auth:8081
+          issuer-uri: ${AUTH_ISSUER_URI:http://auth:8081}
 
   cloud:
     gateway:
@@ -27,7 +27,7 @@ spring:
 
 
         - id: simulation-service
-          uri: http://pms-simulation:8090
+          uri: ${SIMULATION_SERVICE_URI:http://${SIMULATION_SERVICE_HOST:pms-simulation}:${SIMULATION_SERVICE_PORT:8090}}
           predicates:
             - Path=/simulation/**
           filters:
@@ -51,7 +51,7 @@ spring:
                 fallbackUri: forward:/fallback
 
         - id: portfolio-service
-          uri: http://portfolio-id-service:8095
+          uri: ${PORTFOLIO_SERVICE_URI:http://${PORTFOLIO_SERVICE_HOST:portfolio-id-service}:${PORTFOLIO_SERVICE_PORT:8095}}
           predicates:
             - Path=/portfolio/**
 
@@ -64,7 +64,7 @@ spring:
 
 
         - id: analytics-service
-          uri: http://analytics-service:8082
+          uri: ${ANALYTICS_SERVICE_URI:http://${ANALYTICS_SERVICE_HOST:analytics-service}:${ANALYTICS_SERVICE_PORT:8082}}
           predicates:
             - Path=/analytics/**
           filters:
@@ -93,8 +93,8 @@ spring:
                 fallbackUri: forward:/fallback
 
       httpclient:
-        connect-timeout: 3000
-        response-timeout: 10s
+        connect-timeout: ${GATEWAY_HTTPCLIENT_CONNECT_TIMEOUT:3000}
+        response-timeout: ${GATEWAY_HTTPCLIENT_RESPONSE_TIMEOUT:10s}
 
 
 resilience4j:
@@ -125,6 +125,12 @@ resilience4j:
 
 logging:
   level:
-    org.springframework.cloud.gateway: DEBUG
-    org.springframework.security.oauth2: DEBUG
-    reactor.netty.http.client: INFO
+    org.springframework.cloud.gateway: ${LOG_LEVEL_GATEWAY:DEBUG}
+    org.springframework.security.oauth2: ${LOG_LEVEL_OAUTH2:DEBUG}
+    reactor.netty.http.client: ${LOG_LEVEL_NETTY:INFO}
+
+# App specific overrides (CORS and gateway settings)
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+    allow-credentials: ${CORS_ALLOW_CREDENTIALS:false}
