@@ -43,9 +43,7 @@ public class SecurityConfig {
 
                         // 🔒 USER tokens only
                         .pathMatchers("/analytics/**")
-//                        .getAuthorities().map(authorities ->
-//                                authorities.stream().anyMatch(a -> a.getAuthority().equals("ROLE_USER"))
-//                        )
+
                         .access(tokenType("USER"))
 
                         .anyExchange().authenticated()
