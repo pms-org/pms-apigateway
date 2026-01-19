@@ -7,8 +7,8 @@ spring:
 
   data:
     redis:
-      host: ${SPRING_REDIS_HOST}
-      port: ${SPRING_REDIS_PORT}
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
 
   security:
     oauth2:
@@ -18,14 +18,11 @@ spring:
 
   cloud:
     gateway:
-
       default-filters:
         - AddResponseHeader=X-Gateway,DTCC-Simulation-Gateway
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
 
       routes:
-
-
         - id: simulation-service
           uri: http://pms-simulation:8090
           predicates:
@@ -61,8 +58,6 @@ spring:
                 regexp: /portfolio/(?<segment>.*)
                 replacement: /${segment}
 
-
-
         - id: analytics-service
           uri: http://analytics-service:8082
           predicates:
@@ -96,9 +91,7 @@ spring:
         connect-timeout: 3000
         response-timeout: 10s
 
-
 resilience4j:
-
   timelimiter:
     instances:
       simulationCmd:
@@ -121,7 +114,6 @@ resilience4j:
         minimumNumberOfCalls: 5
         failureRateThreshold: 50
         waitDurationInOpenState: 10s
-
 
 logging:
   level:
