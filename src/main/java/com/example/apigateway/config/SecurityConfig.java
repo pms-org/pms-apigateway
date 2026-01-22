@@ -31,7 +31,7 @@ public class SecurityConfig {
 
                 .authorizeExchange(exchanges -> exchanges
 
-                        .pathMatchers("/auth/**", "/fallback", "/actuator/**")
+                        .pathMatchers("/auth/**", "/fallback", "/actuator/**", "/leaderboard/**", "/rttm/**", "/analytics/**", "/analysis/**", "/sectors/**", "/api/**")
                         .permitAll()
 
                         // 🔒 SERVICE tokens only
@@ -41,10 +41,9 @@ public class SecurityConfig {
                                 .pathMatchers("/portfolio/**").access(tokenType("SERVICE"))
 
 
-                        // 🔒 USER tokens only
-                        .pathMatchers("/analytics/**")
-
-                        .access(tokenType("USER"))
+                        // 🔒 USER tokens only (DISABLED FOR DEV)
+                        // .pathMatchers("/analytics/**")
+                        // .access(tokenType("USER"))
 
                         .anyExchange().authenticated()
                 )
