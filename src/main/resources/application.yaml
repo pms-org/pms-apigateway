@@ -7,8 +7,8 @@ spring:
 
   data:
     redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
   security:
     oauth2:
@@ -37,7 +37,8 @@ spring:
             - name: Retry
               args:
                 retries: 1
-                methods: POST
+                methods:
+                  - POST
                 exceptions:
                   - java.net.ConnectException
                   - java.util.concurrent.TimeoutException
@@ -58,27 +59,27 @@ spring:
                 replacement: /${segment}
 
         - id: analytics-actuator
-          uri: http://analytics-app-1:8086
+          uri: http://pms-analytics:8086
           predicates:
             - Path=/actuator/**
 
         - id: analytics-api-prefix
-          uri: http://analytics-app-1:8086
+          uri: http://pms-analytics:8086
           predicates:
             - Path=/api/analysis/**,/api/sectors/**,/api/transactions/**,/api/portfolio_value/**,/api/unrealized/**
 
         - id: api-leaderboard-direct
-          uri: http://host.docker.internal:8000
+          uri: http://pms-leaderboard:8000
           predicates:
             - Path=/api/leaderboard/**
 
         - id: api-rttm-direct
-          uri: http://host.docker.internal:8082
+          uri: http://pms-rttm:8087
           predicates:
             - Path=/api/rttm/**
 
         - id: analytics-direct-analysis
-          uri: http://analytics-app-1:8086
+          uri: http://pms-analytics:8086
           predicates:
             - Path=/analysis/**
           filters:
@@ -88,7 +89,7 @@ spring:
                 replacement: /api/analysis/${segment}
 
         - id: analytics-direct-sectors
-          uri: http://analytics-app-1:8086
+          uri: http://pms-analytics:8086
           predicates:
             - Path=/sectors/**
           filters:
@@ -98,7 +99,7 @@ spring:
                 replacement: /api/sectors/${segment}
 
         - id: analytics-service
-          uri: http://analytics-app-1:8086
+          uri: http://pms-analytics:8086
           predicates:
             - Path=/analytics/**
           filters:
@@ -116,7 +117,8 @@ spring:
             - name: Retry
               args:
                 retries: 2
-                methods: GET
+                methods:
+                  - GET
                 exceptions:
                   - java.net.ConnectException
                   - java.util.concurrent.TimeoutException
@@ -127,7 +129,7 @@ spring:
                 fallbackUri: forward:/fallback
 
         - id: leaderboard-service
-          uri: http://pms-leaderboard-backend:8000
+          uri: http://pms-leaderboard:8000
           predicates:
             - Path=/leaderboard/**
           filters:
@@ -145,7 +147,8 @@ spring:
             - name: Retry
               args:
                 retries: 2
-                methods: GET
+                methods:
+                  - GET
                 exceptions:
                   - java.net.ConnectException
                   - java.util.concurrent.TimeoutException
@@ -156,7 +159,7 @@ spring:
                 fallbackUri: forward:/fallback
 
         - id: rttm-service
-          uri: http://host.docker.internal:8082
+          uri: http://pms-rttm:8087
           predicates:
             - Path=/rttm/**
           filters:
@@ -174,7 +177,8 @@ spring:
             - name: Retry
               args:
                 retries: 2
-                methods: GET
+                methods:
+                  - GET
                 exceptions:
                   - java.net.ConnectException
                   - java.util.concurrent.TimeoutException
@@ -206,32 +210,32 @@ resilience4j:
   circuitbreaker:
     instances:
       simulationCmd:
-        slidingWindowType: COUNT_BASED
-        slidingWindowSize: 10
-        minimumNumberOfCalls: 5
-        failureRateThreshold: 50
-        waitDurationInOpenState: 10s
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
 
       analyticsCmd:
-        slidingWindowType: COUNT_BASED
-        slidingWindowSize: 10
-        minimumNumberOfCalls: 5
-        failureRateThreshold: 50
-        waitDurationInOpenState: 10s
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
 
       leaderboardCmd:
-        slidingWindowType: COUNT_BASED
-        slidingWindowSize: 10
-        minimumNumberOfCalls: 5
-        failureRateThreshold: 50
-        waitDurationInOpenState: 10s
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
 
       rttmCmd:
-        slidingWindowType: COUNT_BASED
-        slidingWindowSize: 10
-        minimumNumberOfCalls: 5
-        failureRateThreshold: 50
-        waitDurationInOpenState: 10s
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
 
 logging:
   level:
