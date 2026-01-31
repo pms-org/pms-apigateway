@@ -1,0 +1,36 @@
+# Version control
+.git
+.gitignore
+
+# Dependencies (uncomment based on your tech stack)
+# node_modules
+# targetS
+# build
+# dist
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker files (optional, if you don't want to include them in the build context)
+Dockerfile
+.dockerignore
+
+# Temporary files
+*.tmp
+*.temp

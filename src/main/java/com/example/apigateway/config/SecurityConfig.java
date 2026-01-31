@@ -15,8 +15,8 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
+
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -31,19 +31,32 @@ public class SecurityConfig {
 
                 .authorizeExchange(exchanges -> exchanges
 
-                        .pathMatchers("/auth/**", "/fallback", "/actuator/**", "/leaderboard/**", "/rttm/**", "/analytics/**", "/analysis/**", "/sectors/**", "/api/**")
+                        // Allow CORS preflight requests (OPTIONS method)
+                        .pathMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**")
+                        .permitAll()
+
+                        // Public endpoints - no authentication required
+                        .pathMatchers("/api/auth/login", "/api/auth/signup", "/fallback", "/actuator/**")
+                        .permitAll()
+
+                        // WebSocket endpoints - allow connection, auth on STOMP CONNECT
+                        // Browser WebSocket clients can't send Authorization header during handshake
+                        .pathMatchers("/ws/**")
                         .permitAll()
 
                         // 🔒 SERVICE tokens only
                         .pathMatchers("/simulation/**")
                         .access(tokenType("SERVICE"))
 
-                                .pathMatchers("/portfolio/**").access(tokenType("SERVICE"))
+                        .pathMatchers("/portfolio/**").access(tokenType("SERVICE"))
 
-
-                        // 🔒 USER tokens only (DISABLED FOR DEV)
-                        // .pathMatchers("/analytics/**")
-                        // .access(tokenType("USER"))
+                        // 🔒 USER tokens required for all backend APIs
+                        .pathMatchers("/api/leaderboard/**", "/api/rttm/**", "/api/analysis/**", "/api/sectors/**", "/api/portfolio_value/**", "/api/transactions/**", "/api/unrealized/**")
+                        .access(tokenType("USER"))
+                        
+                        // Legacy routes without /api prefix (keep for backward compatibility)
+                        .pathMatchers("/leaderboard/**", "/rttm/**", "/analytics/**", "/analysis/**", "/sectors/**")
+                        .access(tokenType("USER"))
 
                         .anyExchange().authenticated()
                 )
