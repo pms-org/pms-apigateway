@@ -1,6 +1,11 @@
 server:
   port: 8080
 
+gateway:
+  cors:
+    # Allow frontend origin (ALB DNS) - for production use exact origin
+    allowed-origins: "http://k8s-pms-pmsingre-ba04040d46-2083897170.us-east-1.elb.amazonaws.com,http://localhost:4200"
+
 spring:
   application:
     name: api-gateway

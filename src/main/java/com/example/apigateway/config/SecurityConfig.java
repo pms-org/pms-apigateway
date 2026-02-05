@@ -15,6 +15,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
 
 import reactor.core.publisher.Flux;
 
@@ -27,6 +28,9 @@ public class SecurityConfig {
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
 
         return http
+                // Disable CSRF globally for this gateway
+                // Auth endpoints and WebSocket don't support CSRF tokens
+                // Backend services handle their own CSRF if needed
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
 
                 .authorizeExchange(exchanges -> exchanges
@@ -36,7 +40,8 @@ public class SecurityConfig {
                         .permitAll()
 
                         // Public endpoints - no authentication required
-                        .pathMatchers("/api/auth/login", "/api/auth/signup", "/fallback", "/actuator/**")
+                        // CRITICAL: These must be checked BEFORE oauth2ResourceServer is configured
+                        .pathMatchers("/api/auth/**", "/fallback", "/actuator/**")
                         .permitAll()
 
                         // WebSocket endpoints - allow connection, auth on STOMP CONNECT
