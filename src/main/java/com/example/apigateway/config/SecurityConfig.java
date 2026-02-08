@@ -24,84 +24,79 @@ import reactor.core.publisher.Flux;
 @EnableReactiveMethodSecurity
 public class SecurityConfig {
 
-    @Bean
-    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+        @Bean
+        public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
 
-        return http
-                // Disable CSRF globally for this gateway
-                // Auth endpoints and WebSocket don't support CSRF tokens
-                // Backend services handle their own CSRF if needed
-                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                return http
+                                // Disable CSRF globally for this gateway
+                                // Auth endpoints and WebSocket don't support CSRF tokens
+                                // Backend services handle their own CSRF if needed
+                                .csrf(ServerHttpSecurity.CsrfSpec::disable)
 
-                .authorizeExchange(exchanges -> exchanges
+                                .authorizeExchange(exchanges -> exchanges
 
-                        // Allow CORS preflight requests (OPTIONS method)
-                        .pathMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**")
-                        .permitAll()
+                                                // Allow CORS preflight requests (OPTIONS method)
+                                                .pathMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**")
+                                                .permitAll()
 
-                        // Public endpoints - no authentication required
-                        // CRITICAL: These must be checked BEFORE oauth2ResourceServer is configured
-                        .pathMatchers("/api/auth/**", "/fallback", "/actuator/**")
-                        .permitAll()
+                                                // Public endpoints - no authentication required
+                                                // CRITICAL: These must be checked BEFORE oauth2ResourceServer is
+                                                // configured
+                                                .pathMatchers("/api/auth/**", "/fallback", "/actuator/**")
+                                                .permitAll()
 
-                        // WebSocket endpoints - allow connection, auth on STOMP CONNECT
-                        // Browser WebSocket clients can't send Authorization header during handshake
-                        .pathMatchers("/ws/**")
-                        .permitAll()
+                                                // WebSocket endpoints - allow connection, auth on STOMP CONNECT
+                                                // Browser WebSocket clients can't send Authorization header during
+                                                // handshake
+                                                .pathMatchers("/ws/**")
+                                                .permitAll()
 
-                        // 🔒 SERVICE tokens only
-                        .pathMatchers("/simulation/**")
-                        .access(tokenType("SERVICE"))
+                                                // 🔒 SERVICE tokens only (internal service-to-service communication)
+                                                .pathMatchers("/portfolio/**").access(tokenType("SERVICE"))
 
-                        .pathMatchers("/portfolio/**").access(tokenType("SERVICE"))
+                                                // 🔒 USER tokens required for all backend APIs
+                                                .pathMatchers("/simulation/**", "/api/portfolio/**",
+                                                                "/api/leaderboard/**", "/api/rttm/**",
+                                                                "/api/analysis/**", "/api/sectors/**",
+                                                                "/api/portfolio_value/**", "/api/transactions/**",
+                                                                "/api/unrealized/**")
+                                                .access(tokenType("USER"))
 
-                        // 🔒 USER tokens required for all backend APIs
-                        .pathMatchers("/api/leaderboard/**", "/api/rttm/**", "/api/analysis/**", "/api/sectors/**", "/api/portfolio_value/**", "/api/transactions/**", "/api/unrealized/**")
-                        .access(tokenType("USER"))
-                        
-                        // Legacy routes without /api prefix (keep for backward compatibility)
-                        .pathMatchers("/leaderboard/**", "/rttm/**", "/analytics/**", "/analysis/**", "/sectors/**")
-                        .access(tokenType("USER"))
+                                                // Legacy routes without /api prefix (keep for backward compatibility)
+                                                .pathMatchers("/leaderboard/**", "/rttm/**", "/analytics/**",
+                                                                "/analysis/**", "/sectors/**")
+                                                .access(tokenType("USER"))
 
-                        .anyExchange().authenticated()
-                )
+                                                .anyExchange().authenticated())
 
-                .oauth2ResourceServer(oauth2 ->
-                        oauth2.jwt(jwt ->
-                                jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())
-                        )
-                )
-                .build();
-    }
+                                .oauth2ResourceServer(oauth2 -> oauth2.jwt(
+                                                jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+                                .build();
+        }
 
-    private ReactiveAuthorizationManager<AuthorizationContext> tokenType(String expected) {
-        return (authentication, context) ->
-                authentication
-                        .filter(auth -> auth instanceof JwtAuthenticationToken)
-                        .cast(JwtAuthenticationToken.class)
-                        .map(jwt ->
-                                expected.equals(jwt.getToken().getClaimAsString("token_type"))
-                        )
-                        .map(AuthorizationDecision::new)
-                        .defaultIfEmpty(new AuthorizationDecision(false));
-    }
+        private ReactiveAuthorizationManager<AuthorizationContext> tokenType(String expected) {
+                return (authentication, context) -> authentication
+                                .filter(auth -> auth instanceof JwtAuthenticationToken)
+                                .cast(JwtAuthenticationToken.class)
+                                .map(jwt -> expected.equals(jwt.getToken().getClaimAsString("token_type")))
+                                .map(AuthorizationDecision::new)
+                                .defaultIfEmpty(new AuthorizationDecision(false));
+        }
 
-    @Bean
-    public ReactiveJwtAuthenticationConverter jwtAuthenticationConverter() {
+        @Bean
+        public ReactiveJwtAuthenticationConverter jwtAuthenticationConverter() {
 
-        JwtGrantedAuthoritiesConverter delegate = new JwtGrantedAuthoritiesConverter();
-        delegate.setAuthoritiesClaimName("roles");
-        delegate.setAuthorityPrefix("");
+                JwtGrantedAuthoritiesConverter delegate = new JwtGrantedAuthoritiesConverter();
+                delegate.setAuthoritiesClaimName("roles");
+                delegate.setAuthorityPrefix("");
 
-        Converter<Jwt, Flux<GrantedAuthority>> authoritiesConverter =
-                jwt -> Flux.fromIterable(delegate.convert(jwt));
+                Converter<Jwt, Flux<GrantedAuthority>> authoritiesConverter = jwt -> Flux
+                                .fromIterable(delegate.convert(jwt));
 
-        ReactiveJwtAuthenticationConverter converter =
-                new ReactiveJwtAuthenticationConverter();
+                ReactiveJwtAuthenticationConverter converter = new ReactiveJwtAuthenticationConverter();
 
-        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+                converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
 
-        return converter;
-    }
+                return converter;
+        }
 }
-
