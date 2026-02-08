@@ -29,12 +29,18 @@ spring:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
 
       routes:
-        # Auth service routes - must be FIRST to catch /api/auth/** before other /api/** routes
+        # Auth service routes - must be FIRST
         - id: auth-service
           uri: http://auth:8081
           predicates:
             - Path=/api/auth/**
 
+        # OAuth token endpoint (REQUIRED)
+        - id: oauth-token
+          uri: http://auth:8081
+          predicates:
+            - Path=/api/oauth2/token
+            
         - id: simulation-service
           uri: http://simulation:8090
           predicates:
